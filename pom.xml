@@ -15,6 +15,8 @@
 	<description>A microservice for managing orders as part of an entire microservice architecture</description>
 	<properties>
 		<java.version>17</java.version>
+		<spring-cloud.version>2022.0.2</spring-cloud.version>
+
 	</properties>
 	<dependencies>
 		<dependency>
@@ -57,7 +59,22 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
 	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
