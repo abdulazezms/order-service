@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
     @Value("${inventory-service.url}")
     private String inventoryServiceUrl;
@@ -48,7 +48,7 @@ public class OrderServiceImpl implements OrderService{
 
 
         //call inventory service and place order if order is in stock.
-        InventoryResponse result = webClient.post()
+        InventoryResponse result = webClientBuilder.build().post()
                 .uri(inventoryServiceUrl.concat(inStockResourcePath))
                 .bodyValue(inventoryRequest)
                 .retrieve()
@@ -58,7 +58,6 @@ public class OrderServiceImpl implements OrderService{
             throw new OutOfStockException(("Sorry, your order cannot be fulfilled: " +
                     Objects.requireNonNull(result).getMessage()));
         }
-        System.out.println("Yes, I am here!");
         orderRepository.save(order);
     }
 
