@@ -22,31 +22,31 @@ public class OrderController {
 
     @PostMapping
     @Retry(name = "inventory", fallbackMethod = "fallback")
-    @TimeLimiter(name = "inventory", fallbackMethod = "timeFallback")
+//    @TimeLimiter(name = "inventory", fallbackMethod = "timeFallback")
 
-    public CompletableFuture<ResponseEntity<String>> placeOrder(@RequestBody OrderRequest orderRequest){
+    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest){
         log.info("placeOrder() called");
+        orderService.placeOrder(orderRequest);
+        String response = "Order successfully created!";
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+
+/*
         return CompletableFuture.supplyAsync(() -> {
-            orderService.placeOrder(orderRequest);
-            String response = "Order successfully created!";
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            This will call the service in a different thread, which
+                causes the traceID to be lost.
         });
-
+*/
     }
 
-    public CompletableFuture<ResponseEntity<String>> fallback(OrderRequest orderRequest, Exception e){
-        return CompletableFuture.completedFuture(
-                new ResponseEntity<>("Sorry, your order:  " + orderRequest.getOrderLineList() + " cannot be fulfilled atm, " +
-                        "why don't you have a cup of coffee then try out again?", HttpStatus.SERVICE_UNAVAILABLE)
-        );
+    public ResponseEntity<String> fallback(OrderRequest orderRequest, Exception e){
+        return new ResponseEntity<>("Sorry, your order:  " + orderRequest.getOrderLineList() + " cannot be fulfilled atm, " +
+                "why don't you have a cup of coffee then try out again?", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
 
-    public CompletableFuture<ResponseEntity<String>>  timeFallback(OrderRequest orderRequest, Exception e){
-        return CompletableFuture.completedFuture(
-                new ResponseEntity<>("Sorry, the service took long to respond. Why don't you come back a few" +
-                        " minutes later??", HttpStatus.REQUEST_TIMEOUT)
-        );
+    public ResponseEntity<String>  timeFallback(OrderRequest orderRequest, Exception e){
+        return new ResponseEntity<>("Sorry, the service took long to respond. Why don't you come back a few" +
+                        " minutes later??", HttpStatus.REQUEST_TIMEOUT);
     }
 
 }
