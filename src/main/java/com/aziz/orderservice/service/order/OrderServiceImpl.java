@@ -1,5 +1,6 @@
 package com.aziz.orderservice.service.order;
 
+import com.aziz.orderservice.client.InventoryClient;
 import com.aziz.orderservice.dto.OrderLineRequest;
 import com.aziz.orderservice.dto.OrderRequest;
 import com.aziz.orderservice.exception.OutOfStockException;
@@ -12,7 +13,6 @@ import com.aziz.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,16 +22,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
-    private final WebClient.Builder webClientBuilder;
+    private final InventoryClient inventoryClient;
 
-    @Value("${inventory-service.url}")
-    private String inventoryServiceUrl;
-
-    @Value("${inventory-service.url.in-stock}")
-    private String inStockResourcePath;
-
-    @Value("${inventory-service.url.in-stock.query_param}")
-    private String inStockQueryParam;
 
     @Override
     public void placeOrder(OrderRequest orderRequest) {
@@ -45,15 +37,8 @@ public class OrderServiceImpl implements OrderService{
                                 .quantity(orderLine.getQuantity())
                                 .build())
                         .toList();
+        InventoryResponse result = inventoryClient.placeOrder(inventoryRequest);
 
-
-        //call inventory service and place order if order is in stock.
-        InventoryResponse result = webClientBuilder.build().post()
-                .uri(inventoryServiceUrl.concat(inStockResourcePath))
-                .bodyValue(inventoryRequest)
-                .retrieve()
-                .bodyToMono(InventoryResponse.class)
-                .block();
         if(result == null || !result.getSuccess()){
             throw new OutOfStockException(("Sorry, your order cannot be fulfilled: " +
                     Objects.requireNonNull(result).getMessage()));
