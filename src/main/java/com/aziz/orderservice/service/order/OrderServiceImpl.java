@@ -3,6 +3,7 @@ package com.aziz.orderservice.service.order;
 import com.aziz.orderservice.client.InventoryClient;
 import com.aziz.orderservice.dto.OrderLineRequest;
 import com.aziz.orderservice.dto.OrderRequest;
+import com.aziz.orderservice.event.OrderPlacedEvent;
 import com.aziz.orderservice.exception.OutOfStockException;
 import com.aziz.orderservice.model.InventoryRequest;
 import com.aziz.orderservice.model.InventoryResponse;
@@ -12,6 +13,7 @@ import com.aziz.orderservice.repository.OrderLineRepository;
 import com.aziz.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,7 @@ public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
 
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     @Override
     public void placeOrder(OrderRequest orderRequest) {
@@ -44,6 +47,14 @@ public class OrderServiceImpl implements OrderService{
                     Objects.requireNonNull(result).getMessage()));
         }
         orderRepository.save(order);
+        String notificationTopic = "notification-topic";
+        //sending the message to the topic `notificationTopic`.
+        //we'll send the order number as the message to the queue, encapsulated
+        //in a POJO, so that it can be serialized into JSON.
+        kafkaTemplate.send(
+                notificationTopic,//sending to the notificationTopic...
+                OrderPlacedEvent.builder().orderNumber(order.getOrderNumber()).build()
+        );
     }
 
     private Order mapOrderRequestToOrder(OrderRequest orderRequest){
