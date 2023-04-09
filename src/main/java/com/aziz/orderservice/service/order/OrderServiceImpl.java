@@ -12,6 +12,7 @@ import com.aziz.orderservice.model.OrderLine;
 import com.aziz.orderservice.repository.OrderLineRepository;
 import com.aziz.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,13 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
+    @Value("${notification-topic}")
+    private String notificationTopic;
+
 
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
@@ -47,10 +52,11 @@ public class OrderServiceImpl implements OrderService{
                     Objects.requireNonNull(result).getMessage()));
         }
         orderRepository.save(order);
-        String notificationTopic = "notification-topic";
         //sending the message to the topic `notificationTopic`.
         //we'll send the order number as the message to the queue, encapsulated
         //in a POJO, so that it can be serialized into JSON.
+        log.info("Order was saved");
+
         kafkaTemplate.send(
                 notificationTopic,//sending to the notificationTopic...
                 OrderPlacedEvent.builder().orderNumber(order.getOrderNumber()).build()
